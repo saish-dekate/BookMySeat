@@ -17,6 +17,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '.saishs-projects.vercel.app',
     'book-my-seat.vercel.app',
+    'book-my-seat-x1nd.vercel.app',
 ]
 
 INSTALLED_APPS = [
