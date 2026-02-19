@@ -115,7 +115,6 @@
 <div class="container py-5">
     <h2 class="text-center mb-4" style="font-weight: 700;">Movies In theatres</h2>
 
-    <!-- Search and Filters -->
     <div class="filter-container">
         <form method="GET" action="{% url 'movies:movie_list' %}" class="row g-3 align-items-end">
             <div class="col-md-6">
@@ -156,7 +155,6 @@
         </form>
     </div>
 
-    <!-- Movies Grid -->
     <div class="row" id="movieList">
         {% for movie in movies %}
         <div class="col-md-3 mb-4">
@@ -185,7 +183,6 @@
     </div>
 </div>
 
-<!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>

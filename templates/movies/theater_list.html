@@ -135,12 +135,9 @@
   
   <body>
     <div class="container">
-      <!-- Movie Title -->
       <div class="movie-title">Movie - {{ movie.name }}</div>
   
-      <!-- Conditional Check for Theaters -->
       {% if theaters %}
-        <!-- Theater List and Showtimes -->
         {% for theater in theaters %}
         <div class="theatre-info">
           <div>
@@ -165,7 +162,6 @@
         </div>
         {% endfor %}
       {% else %}
-        <!-- Message when no theaters are available -->
         <div class="no-theaters mt-4">
           <p>Sorry, no theaters are available for this movie at the moment.</p>
         </div>
@@ -176,13 +172,4 @@
       </div>
     </div>
   </body>
-<!-- <h1>Theater for {{movie.name}}</h1>
-<ul>
-  {% for theater in theaters %}
-  <li>
-    <strong>{{theater.name}}</strong>{{theater.time}}
-    <a href="{% url 'book_seats' theater.id %}">View Seats</a>
-  </li>
-  {% endfor %}
-</ul> -->
 {% endblock %}

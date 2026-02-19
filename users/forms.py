@@ -18,5 +18,5 @@ class UserUpdateForm(forms.ModelForm):
 
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
-        model = User  # If adding more profile fields, change to a Profile model
-        fields = ['password']  # User can reset password
+        model = User
+        fields = ['password']

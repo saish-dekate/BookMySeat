@@ -4,13 +4,12 @@ from datetime import timedelta
 from booking.models import ShowSeat, RESERVATION_TIMEOUT_MINUTES
 
 class Command(BaseCommand):
-    help = "Release expired seat reservations (runs automatically to clean up stale reservations)"
+    help = "Release expired seat reservations"
 
     def handle(self, *args, **kwargs):
         current_time = timezone.now()
         expired_seats = []
         
-        # Find all reserved but not booked seats
         reserved_seats = ShowSeat.objects.filter(
             reserved_by__isnull=False,
             is_booked=False
