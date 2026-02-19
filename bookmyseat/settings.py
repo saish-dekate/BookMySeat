@@ -4,14 +4,15 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-c8aetlj(=vp90n@#yoc^&d(_6ivp(d!bv-4-f!r$lawptjzrwu'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-c8aetlj(=vp90n@#yoc^&d(_6ivp(d!bv-4-f!r$lawptjzrwu')
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     '.vercel.app',
     'localhost',
     '127.0.0.1',
+    'django-bookmyshow.vercel.app',
 ]
 
 INSTALLED_APPS = [
@@ -28,6 +29,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -38,13 +40,13 @@ MIDDLEWARE = [
 
 AUTH_USER_MODEL='auth.User'
 
-EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST='smtp.gmail.com'
-EMAIL_PORT=587
-EMAIL_USE_TLS=True
-EMAIL_HOST_USER='bms.booking.real@gmail.com'
-EMAIL_HOST_PASSWORD='mpdt xeay etos ucky'
-DEFAULT_FROM_EMAIL='BookMySeat <bms.booking.real@gmail.com>'
+EMAIL_BACKEND=os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST=os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT=os.environ.get('EMAIL_PORT', '587')
+EMAIL_USE_TLS=os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL=os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@bookmyshow.com')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -75,7 +77,10 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-DATABASES['default'] = dj_database_url.parse('postgresql://django_bookmyshow_jpo3_user:asDEjpEKUy9ZfFGQKxTslTKTnrcWW6J7@dpg-d613d0npm1nc73e6933g-a.oregon-postgres.render.com/django_bookmyshow_jpo3')
+
+database_url = os.environ.get('DATABASE_URL')
+if database_url:
+    DATABASES['default'] = dj_database_url.parse(database_url)
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -101,8 +106,9 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-RAZORPAY_KEY_ID = 'rzp_test_SHzQaP22YUeqFR'
-RAZORPAY_KEY_SECRET = 'ED49KFFvM451xRVckpzC83IN'
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
