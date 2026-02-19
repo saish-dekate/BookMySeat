@@ -18,5 +18,8 @@
             "src": "/(.*)",
             "dest": "bookmyseat/wsgi.py"
         }
-    ]
+    ],
+    "env": {
+        "DEBUG": "True"
+    }
 }
