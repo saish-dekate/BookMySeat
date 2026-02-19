@@ -13,6 +13,7 @@ ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '.saishs-projects.vercel.app',
+    'book-my-seat.vercel.app',
 ]
 
 INSTALLED_APPS = [
@@ -71,19 +72,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bookmyseat.wsgi.application'
 
-database_url = os.environ.get('DATABASE_URL', '')
+RENDER_DATABASE_URL = 'postgresql://django_bookmyshow_jpo3_user:asDEjpEKUy9ZfFGQKxTslTKTnrcWW6J7@dpg-d613d0npm1nc73e6933g-a.oregon-postgres.render.com/django_bookmyshow_jpo3'
 
-if database_url:
-    DATABASES = {
-        'default': dj_database_url.parse(database_url)
-    }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+database_url = os.environ.get('DATABASE_URL', RENDER_DATABASE_URL)
+
+DATABASES = {
+    'default': dj_database_url.parse(database_url)
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -113,5 +108,5 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
-RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', 'rzp_test_SHzQaP22YUeqFR')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', 'ED49KFFvM451xRVckpzC83IN')
