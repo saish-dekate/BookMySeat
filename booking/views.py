@@ -4,13 +4,14 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.mail import send_mail
-import razorpay
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponseBadRequest
 from .models import Show, ShowSeat, Booking
 
 
-razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+def get_razorpay_client():
+    import razorpay
+    return razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
 
 def send_booking_confirmation(booking):
@@ -89,8 +90,8 @@ def select_seats(request, show_id):
         selected_ids = request.POST.getlist('seats')
 
         if not selected_ids:
-            messages.error(request, "Please select at least one seat.")
-            return redirect(request.path)
+                messages.error(request, "Please select at least one seat.")
+                return redirect('select_seats', show_id=show.id)
 
         with transaction.atomic():
             seats = ShowSeat.objects.select_for_update().filter(
@@ -109,7 +110,7 @@ def select_seats(request, show_id):
 
             if seats.count() != len(selected_ids):
                 messages.error(request, "Some seats are no longer available.")
-                return redirect(request.path)
+                return redirect('select_seats', show_id=show.id)
 
             total_amount = seats.count() * show.price
 
@@ -131,6 +132,7 @@ def select_seats(request, show_id):
 
             amount_in_paise = int(total_amount * 100)
 
+            razorpay_client = get_razorpay_client()
             razorpay_order = razorpay_client.order.create({
                 'amount': amount_in_paise,
                 'currency': 'INR',
@@ -176,6 +178,7 @@ def payment_success(request):
             }
 
             try:
+                razorpay_client = get_razorpay_client()
                 razorpay_client.utility.verify_payment_signature(params_dict)
                 booking.is_paid = True
                 booking.status = 'CONFIRMED'
@@ -199,10 +202,10 @@ def payment_success(request):
                 messages.success(request, "Payment successful! Your booking is confirmed. Check your email for details.")
                 return redirect('profile')
 
-            except razorpay.errors.SignatureVerificationError:
+            except Exception as e:
                 booking.status = 'FAILED'
                 booking.save()
-                messages.error(request, "Payment verification failed.")
+                messages.error(request, f"Payment verification failed: {str(e)}")
                 return redirect('select_seats', show_id=booking.show.id)
 
         except Exception as e:
