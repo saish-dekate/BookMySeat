@@ -5,7 +5,8 @@
             "src": "bookmyseat/wsgi.py",
             "use": "@vercel/python",
             "config": {
-                "maxLambdaSize": "15mb"
+                "maxLambdaSize": "15mb",
+                "install": ["setuptools"]
             }
         }
     ],
@@ -18,8 +19,5 @@
             "src": "/(.*)",
             "dest": "bookmyseat/wsgi.py"
         }
-    ],
-    "env": {
-        "DEBUG": "True"
-    }
+    ]
 }
