@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .payment-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .payment-header {
+        background: linear-gradient(90deg, #1a1a1a 0%, #333 100%);
+        color: #fff;
+        padding: 20px;
+    }
+    
+    .order-summary {
+        border-bottom: 1px solid #eee;
+        padding: 20px;
+    }
+    
+    .movie-title {
+        font-size: 20px;
+        font-weight: 700;
+    }
+    
+    .price-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        color: #666;
+    }
+    
+    .price-row.total {
+        border-top: 1px dashed #ddd;
+        margin-top: 10px;
+        padding-top: 15px;
+        font-weight: 700;
+        font-size: 18px;
+        color: #333;
+    }
+    
+    .pay-btn {
+        background: #f84464;
+        border: none;
+        padding: 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 16px;
+        width: 100%;
+        transition: all 0.3s;
+    }
+    
+    .pay-btn:hover {
+        background: #e63654;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="payment-card">
+                <div class="payment-header">
+                    <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment</h5>
+                </div>
+                
+                <div class="order-summary">
+                    <div class="movie-title">{{ booking.show.movie.name }}</div>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-building me-1"></i> {{ booking.show.screen.theatre.name }}
+                    </p>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-calendar me-1"></i> {{ booking.show.date|date:"ddd, d MMM" }} | {{ booking.show.time|time:"h:i A" }}
+                    </p>
+                    <p class="mb-3">
+                        <i class="fas fa-chair me-1"></i> 
+                        <strong>Seats:</strong> 
+                        {% for seat in booking.seats.all %}{{ seat.row }}{{ seat.number }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    </p>
+                    
+                    <div class="price-row">
+                        <span>Ticket Price ({{ booking.seats.count }} × ₹{{ booking.show.price }})</span>
+                        <span>₹{{ booking.total_amount }}</span>
+                    </div>
+                    <div class="price-row">
+                        <span>Convenience Fee</span>
+                        <span>₹0</span>
+                    </div>
+                    <div class="price-row total">
+                        <span>Total</span>
+                        <span style="color: #f84464;">₹{{ booking.total_amount }}</span>
+                    </div>
+                </div>
+                
+                <div class="p-3">
+                    <form id="payment-form">
+                        {% csrf_token %}
+                        <input type="hidden" id="razorpay_order_id" value="{{ razorpay_order.id }}">
+                        <input type="hidden" id="razorpay_payment_id" name="razorpay_payment_id">
+                        <input type="hidden" id="razorpay_signature" name="razorpay_signature">
+                        <input type="hidden" name="razorpay_order_id" value="{{ razorpay_order.id }}">
+                        
+                        <button type="button" id="pay-button" class="btn btn-primary pay-btn">
+                            <i class="fas fa-lock me-2"></i> Pay ₹{{ booking.total_amount }}
+                        </button>
+                    </form>
+                    
+                    <p class="text-center text-muted mt-3 mb-0" style="font-size: 12px;">
+                        <i class="fas fa-shield-alt me-1"></i> Secure payment powered by Razorpay
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    document.getElementById('pay-button').onclick = function(e) {
+        e.preventDefault();
+        
+        var options = {
+            "key": "{{ razorpay_key }}",
+            "amount": "{{ razorpay_order.amount }}",
+            "currency": "{{ razorpay_order.currency }}",
+            "name": "BookMySeat",
+            "description": "Movie Ticket Booking - {{ booking.show.movie.name }}",
+            "order_id": "{{ razorpay_order.id }}",
+            "handler": function (response) {
+                document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                document.getElementById('razorpay_signature').value = response.razorpay_signature;
+                
+                var form = document.getElementById('payment-form');
+                form.action = "{% url 'booking:payment_success' %}";
+                form.submit();
+            },
+            "prefill": {
+                "name": "{{ user.username }}",
+                "email": "{{ user.email }}"
+            },
+            "theme": {
+                "color": "#f84464"
+            }
+        };
+        
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
+    }
+</script>
+
+{% endblock %}

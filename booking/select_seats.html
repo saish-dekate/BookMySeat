@@ -1,0 +1,18 @@
+<h2>Select Seats</h2>
+<h3>{{ show.movie }}</h3>
+
+<form method="post">
+  {% csrf_token %}
+
+  {% for ss in show_seats %}
+    <label>
+      <input type="checkbox" name="seats" value="{{ ss.seat.id }}"
+        {% if ss.is_booked %}disabled{% endif %}>
+      {{ ss.seat }}
+    </label>
+    <br>
+  {% endfor %}
+
+  <br>
+  <button type="submit">Book Seats</button>
+</form>

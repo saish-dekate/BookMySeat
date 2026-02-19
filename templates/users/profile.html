@@ -3,7 +3,6 @@
 <div class="container py-5">
   <div class="row">
     <div class="col-lg-4 mb-4">
-      <!-- User Info Card -->
       <div class="card shadow">
         <div class="card-body text-center">
           <div class="mb-3">
@@ -20,7 +19,6 @@
     </div>
     
     <div class="col-lg-8">
-      <!-- Profile Update Form Card -->
       <div class="card shadow mb-4">
         <div class="card-header bg-primary text-white">
           <h4 class="mb-0"><i class="fas fa-user-edit me-2"></i> Update Profile</h4>
@@ -46,7 +44,6 @@
         </div>
       </div>
       
-      <!-- Bookings Card -->
       <div class="card shadow">
         <div class="card-header bg-success text-white">
           <h4 class="mb-0"><i class="fas fa-ticket-alt me-2"> </i> Your Bookings</h4>
@@ -60,9 +57,15 @@
                     <div class="card-body">
                       <h5 class="card-title">{{ booking.movie.name }}</h5>
                       <p class="card-text">
-                        <i class="fas fa-film me-2 text-muted"> </i>  {{ booking.theater.name }}<br>
-                        <i class="fas fa-chair me-2 text-muted"> </i>  Seat: {{ booking.seat.seat_number }}<br>
-                        <i class="far fa-clock me-2 text-muted"> </i>  {{ booking.booked_at|date:"F d, Y H:i" }}
+                        <i class="fas fa-film me-2 text-muted"></i> {{ booking.theater.name }}<br>
+                        <i class="fas fa-map-marker-alt me-2 text-muted"></i> {{ booking.theater.address }}<br>
+                        <i class="fas fa-chair me-2 text-muted"></i> 
+                        {% for seat in booking.seats.all %}{{ seat.row }}{{ seat.number }}{% if not forloop.last %}, {% endif %}{% endfor %}<br>
+                        <i class="far fa-clock me-2 text-muted"></i> {{ booking.show_date|date:"F d, Y" }} {{ booking.show_time|date:"H:i" }}<br>
+                        <i class="fas fa-rupee-sign me-2 text-muted"></i> {{ booking.total_amount }}<br>
+                        <span class="badge {% if booking.status == 'CONFIRMED' %}bg-success{% elif booking.status == 'PENDING' %}bg-warning{% else %}bg-danger{% endif %}">
+                          {{ booking.status }}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -81,10 +84,8 @@
   </div>
 </div>
 
-<!-- Font Awesome CDN -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-<!-- Custom CSS -->
 <style>
   body {
     background-color: #f8f9fa;
@@ -101,7 +102,6 @@
     border-top-left-radius: 15px;
     border-top-right-radius: 15px;
   }
-  /* Style form fields */
   form input, form select, form textarea {
     display: block;
     width: 100%;
@@ -127,31 +127,4 @@
     }
   }
 </style>
-<!-- <div class="container mt-4">
-    <h2>Profile</h2>
-    <form method="POST">
-      {% csrf_token %}
-      {{ u_form.as_p }}
-      <div>
-        <button class="btn btn-primary mt-2" type="submit">Update Profile</button>
-      </div>
-    </form>
-   
-    <p>Want to change your password? <a href="{% url 'password_reset' %}">Reset it here</a>.</p>
-
-    <h2>Booking</h2>
-    <ul>
-      {% for booking in bookings %}
-      <li>
-        movie:{{booking.movie.name}}<br>
-        theater:{{booking.theater.name}}<br>
-        seat:{{booking.seat.seat_number}}<br>
-        bookedat:{{booking.booked_at}}
-
-      </li>
-      {% empty %}
-      <li>no bookings yet</li>
-      {% endfor %}
-    </ul>
-  </div> -->
 {% endblock %}

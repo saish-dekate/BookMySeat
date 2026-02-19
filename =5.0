@@ -1,0 +1,4 @@
+Requirement already satisfied: Django in C:\Users\SAISH DEKATE\AppData\Local\Programs\Python\Python314\Lib\site-packages (4.2.28)
+Requirement already satisfied: asgiref<4,>=3.6.0 in C:\Users\SAISH DEKATE\AppData\Local\Programs\Python\Python314\Lib\site-packages (from Django) (3.11.0)
+Requirement already satisfied: sqlparse>=0.3.1 in C:\Users\SAISH DEKATE\AppData\Local\Programs\Python\Python314\Lib\site-packages (from Django) (0.5.5)
+Requirement already satisfied: tzdata in C:\Users\SAISH DEKATE\AppData\Local\Programs\Python\Python314\Lib\site-packages (from Django) (2025.3)

@@ -3,7 +3,9 @@ from .forms import UserRegisterForm, UserUpdateForm
 from django.shortcuts import render,redirect
 from django.contrib.auth import login,authenticate
 from django.contrib.auth.decorators import login_required
-from movies.models import Movie , Booking
+from movies.models import Movie
+from booking.models import Booking
+
 
 def home(request):
     movies= Movie.objects.all()

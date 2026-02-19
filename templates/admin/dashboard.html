@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .dashboard-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 25px;
+        color: white;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+    }
+    .dashboard-card.revenue {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .dashboard-card.bookings {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .dashboard-card.users {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    .dashboard-card.tickets {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+    .stat-number {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    .stat-label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    .section-header {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid #667eea;
+    }
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #333;
+        margin: 0;
+    }
+    .table-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom: 30px;
+    }
+    .movie-rank {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: white;
+    }
+    .rank-1 { background: #FFD700; }
+    .rank-2 { background: #C0C0C0; }
+    .rank-3 { background: #CD7F32; }
+    .rank-other { background: #6c757d; }
+    .status-badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .status-confirmed { background: #d4edda; color: #155724; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-failed { background: #f8d7da; color: #721c24; }
+    .chart-container {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        margin-bottom: 30px;
+        height: 400px;
+    }
+    .admin-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="font-weight: 700;">Admin Dashboard</h2>
+        <span class="admin-badge"><i class="fas fa-shield-alt me-2"></i>Administrator</span>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-3">
+            <div class="dashboard-card revenue">
+                <div class="stat-number">₹{{ total_revenue|floatformat:0 }}</div>
+                <div class="stat-label">Total Revenue</div>
+                <hr style="border-color: rgba(255,255,255,0.3); margin: 15px 0;">
+                <small><i class="fas fa-calendar-day me-1"></i> Today: ₹{{ today_revenue|floatformat:0 }}</small><br>
+                <small><i class="fas fa-chart-line me-1"></i> 30 Days: ₹{{ last_30_days_revenue|floatformat:0 }}</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="dashboard-card bookings">
+                <div class="stat-number">{{ total_bookings }}</div>
+                <div class="stat-label">Total Bookings</div>
+                <hr style="border-color: rgba(255,255,255,0.3); margin: 15px 0;">
+                <small><i class="fas fa-clock me-1"></i> Pending: {{ pending_bookings }}</small><br>
+                <small><i class="fas fa-times-circle me-1"></i> Failed: {{ failed_bookings }}</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="dashboard-card tickets">
+                <div class="stat-number">{{ total_tickets_sold }}</div>
+                <div class="stat-label">Tickets Sold</div>
+                <hr style="border-color: rgba(255,255,255,0.3); margin: 15px 0;">
+                <small><i class="fas fa-percentage me-1"></i> Avg per booking: {{ avg_tickets_per_booking|floatformat:1 }}</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="dashboard-card users">
+                <div class="stat-number">{{ total_users }}</div>
+                <div class="stat-label">Total Users</div>
+                <hr style="border-color: rgba(255,255,255,0.3); margin: 15px 0;">
+                <small><i class="fas fa-user-plus me-1"></i> New today: {{ new_users_today }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-chart-bar me-2"></i>Revenue Trend (Last 30 Days)</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-film me-2"></i>Top 10 Movies</h3>
+            </div>
+            <div class="table-container">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Movie</th>
+                            <th class="text-end">Bookings</th>
+                            <th class="text-end">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for movie in popular_movies %}
+                        <tr>
+                            <td>
+                                <div class="movie-rank rank-{% if forloop.counter <= 3 %}{{ forloop.counter }}{% else %}other{% endif %}">
+                                    {{ forloop.counter }}
+                                </div>
+                            </td>
+                            <td>
+                                <strong>{{ movie.show__movie__name }}</strong><br>
+                                <small class="text-muted">{{ movie.tickets_sold }} tickets</small>
+                            </td>
+                            <td class="text-end">{{ movie.total_bookings }}</td>
+                            <td class="text-end">₹{{ movie.total_revenue|floatformat:0 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No booking data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-building me-2"></i>Busiest Theaters</h3>
+            </div>
+            <div class="table-container">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Theater</th>
+                            <th>City</th>
+                            <th class="text-end">Bookings</th>
+                            <th class="text-end">Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for theater in busiest_theaters %}
+                        <tr>
+                            <td><strong>{{ theater.show__screen__theatre__name }}</strong></td>
+                            <td>{{ theater.show__screen__theatre__city }}</td>
+                            <td class="text-end">{{ theater.total_bookings }}</td>
+                            <td class="text-end">₹{{ theater.total_revenue|floatformat:0 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">No theater data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="section-header">
+                <h3 class="section-title"><i class="fas fa-history me-2"></i>Recent Bookings</h3>
+            </div>
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>User</th>
+                            <th>Movie</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in recent_bookings %}
+                        <tr>
+                            <td>#{{ booking.id }}</td>
+                            <td>{{ booking.user.username }}</td>
+                            <td>{{ booking.show.movie.name }}</td>
+                            <td>₹{{ booking.total_amount }}</td>
+                            <td>
+                                <span class="status-badge status-{{ booking.status|lower }}">
+                                    {{ booking.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">No recent bookings</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const revenueData = {{ revenue_by_date|safe }};
+    
+    const labels = revenueData.map(item => {
+        const date = new Date(item.date);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    
+    const data = revenueData.map(item => item.revenue);
+    
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Revenue (₹)',
+                data: data,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '₹' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

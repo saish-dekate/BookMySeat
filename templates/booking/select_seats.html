@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .seat-layout {
+        background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%);
+        padding: 30px;
+        border-radius: 16px;
+        min-height: 500px;
+    }
+    
+    .screen-curve {
+        background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+        padding: 20px;
+        text-align: center;
+        border-radius: 50% 50% 0 0 / 30px 30px 0 0;
+        margin-bottom: 40px;
+        position: relative;
+    }
+    
+    .screen-curve::after {
+        content: 'SCREEN';
+        color: #fff;
+        font-size: 14px;
+        letter-spacing: 4px;
+        font-weight: 600;
+    }
+    
+    .seat-row {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        align-items: center;
+    }
+    
+    .row-label {
+        color: #fff;
+        font-weight: 600;
+        width: 30px;
+        text-align: center;
+    }
+    
+    .seat {
+        width: 40px;
+        height: 38px;
+        border-radius: 8px 8px 12px 12px;
+        border: 2px solid #4a4a4a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 12px;
+    }
+    
+    .seat.available {
+        background: #fff;
+        color: #333;
+        border-color: #ccc;
+    }
+    
+    .seat.available:hover {
+        transform: scale(1.1);
+        border-color: #f84464;
+    }
+    
+    .seat.selected {
+        background: #f84464;
+        color: #fff;
+        border-color: #f84464;
+    }
+    
+    .seat.booked {
+        background: #3d3d3d;
+        color: #666;
+        border-color: #3d3d3d;
+        cursor: not-allowed;
+    }
+    
+    .seat.reserved-other {
+        background: #666;
+        color: #999;
+        border-color: #666;
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+    
+    .seat.reserved-you {
+        background: #ff9800;
+        color: #fff;
+        border-color: #ff9800;
+        cursor: pointer;
+    }
+    
+    .seat.vip {
+        border-color: #ffd700;
+    }
+    
+    .seat.vip.selected {
+        background: #ffd700;
+        color: #000;
+    }
+    
+    .legend {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #444;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #fff;
+        font-size: 13px;
+    }
+    
+    .legend-box {
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+    }
+    
+    .booking-summary {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        position: sticky;
+        top: 20px;
+    }
+    
+    .movie-info {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .ticket-price {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .total-amount {
+        font-size: 24px;
+        font-weight: 700;
+        color: #f84464;
+    }
+    
+    .proceed-btn {
+        background: #f84464;
+        border: none;
+        padding: 14px;
+        border-radius: 8px;
+        font-weight: 600;
+        width: 100%;
+        transition: all 0.3s;
+    }
+    
+    .proceed-btn:hover {
+        background: #e63654;
+        transform: translateY(-2px);
+    }
+    
+    .proceed-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Seat Selection -->
+        <div class="col-lg-8">
+            <div class="seat-layout">
+                <div class="screen-curve"></div>
+                
+                <form method="post" id="seat-form">
+                    {% csrf_token %}
+                    
+                    {% regroup show_seats by row as row_list %}
+                    
+                    {% for row in row_list %}
+                        <div class="seat-row">
+                            <span class="row-label">{{ row.grouper }}</span>
+                            {% for seat in row.list %}
+                                {% if seat.is_booked %}
+                                    <div class="seat booked" title="Booked">{{ seat.number }}</div>
+                                {% elif seat.is_reserved and seat.reserved_by != request.user %}
+                                    <div class="seat reserved-other" title="Reserved by another user">{{ seat.number }}</div>
+                                {% elif seat.is_reserved and seat.reserved_by == request.user %}
+                                    <label class="seat reserved-you {% if row.grouper in 'ABC' %}vip{% endif %}">
+                                        <input type="checkbox" 
+                                               name="seats" 
+                                               value="{{ seat.id }}" 
+                                               data-row="{{ row.grouper }}"
+                                               data-number="{{ seat.number }}"
+                                               onchange="updateSelection()">
+                                        <span>{{ seat.number }}</span>
+                                    </label>
+                                {% else %}
+                                    <label class="seat available {% if row.grouper in 'ABC' %}vip{% endif %}">
+                                        <input type="checkbox" 
+                                               name="seats" 
+                                               value="{{ seat.id }}" 
+                                               data-row="{{ row.grouper }}"
+                                               data-number="{{ seat.number }}"
+                                               onchange="updateSelection()">
+                                        <span>{{ seat.number }}</span>
+                                    </label>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #fff;"></div>
+                            <span>Available</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #f84464;"></div>
+                            <span>Selected</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #3d3d3d;"></div>
+                            <span>Booked</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-box" style="background: #666;"></div>
+                            <span>Reserved</span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Booking Summary -->
+        <div class="col-lg-4">
+            <div class="booking-summary">
+                <div class="movie-info">
+                    <h5 style="font-weight: 700;">{{ show.movie.name }}</h5>
+                    <p class="text-muted mb-1">
+                        <i class="fas fa-film me-1"></i> {{ show.screen.theatre.name }}
+                    </p>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-calendar me-1"></i> {{ show.date|date:"ddd, d M" }} | {{ show.time|time:"h:i A" }}
+                    </p>
+                </div>
+                
+                <div class="ticket-selection mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Tickets</span>
+                        <span id="ticket-count">0</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Price per ticket</span>
+                        <span>₹{{ show.price }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Convenience Fee</span>
+                        <span>₹0</span>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="ticket-price mb-3">
+                    <span style="font-weight: 600;">Total</span>
+                    <span class="total-amount" id="total-amount">₹0</span>
+                </div>
+                
+                <button type="submit" form="seat-form" class="btn btn-primary proceed-btn" id="proceed-btn" disabled>
+                    Proceed to Payment
+                </button>
+                
+                <div id="reservation-timer" class="text-center mt-2" style="display: none;">
+                    <p class="text-warning mb-0" style="font-size: 13px;">
+                        <i class="fas fa-clock me-1"></i> 
+                        Reserved for: <span id="timer-countdown" class="fw-bold">05:00</span>
+                    </p>
+                </div>
+                
+                <p class="text-muted text-center mt-2 mb-0" style="font-size: 12px;">
+                    <i class="fas fa-lock me-1"></i> Secure Payment
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedSeats = [];
+    let reservationInterval;
+    const RESERVATION_MINUTES = {{ reservation_timeout|default:5 }};
+    
+    function updateSelection() {
+        const checkboxes = document.querySelectorAll('input[name="seats"]:checked');
+        selectedSeats = [];
+        
+        checkboxes.forEach(cb => {
+            selectedSeats.push({
+                row: cb.dataset.row,
+                number: cb.dataset.number
+            });
+            
+            const label = cb.parentElement;
+            label.classList.remove('available', 'reserved-you');
+            label.classList.add('selected');
+        });
+        
+        document.querySelectorAll('input[name="seats"]:not(:checked)').forEach(cb => {
+            const label = cb.parentElement;
+            if (!label.classList.contains('reserved-other')) {
+                label.classList.remove('selected');
+                label.classList.add('available');
+            }
+        });
+        
+        const ticketCount = selectedSeats.length;
+        const pricePerTicket = {{ show.price }};
+        const total = ticketCount * pricePerTicket;
+        
+        document.getElementById('ticket-count').innerText = ticketCount;
+        document.getElementById('total-amount').innerText = '₹' + total;
+        
+        const proceedBtn = document.getElementById('proceed-btn');
+        proceedBtn.disabled = ticketCount === 0;
+        
+        if (ticketCount > 0) {
+            proceedBtn.innerText = 'Pay ₹' + total;
+            startReservationTimer();
+        } else {
+            proceedBtn.innerText = 'Proceed to Payment';
+            stopReservationTimer();
+        }
+    }
+    
+    function startReservationTimer() {
+        const timerDisplay = document.getElementById('reservation-timer');
+        const countdownDisplay = document.getElementById('timer-countdown');
+        
+        timerDisplay.style.display = 'block';
+        
+        let totalSeconds = RESERVATION_MINUTES * 60;
+        
+        if (reservationInterval) {
+            clearInterval(reservationInterval);
+        }
+        
+        reservationInterval = setInterval(function() {
+            totalSeconds--;
+            
+            if (totalSeconds <= 0) {
+                clearInterval(reservationInterval);
+                alert('Your reservation has expired. The page will refresh.');
+                window.location.reload();
+                return;
+            }
+            
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            countdownDisplay.innerText = 
+                (minutes < 10 ? '0' : '') + minutes + ':' + 
+                (seconds < 10 ? '0' : '') + seconds;
+            
+            // Turn red when less than 1 minute remaining
+            if (totalSeconds < 60) {
+                countdownDisplay.classList.remove('text-warning');
+                countdownDisplay.classList.add('text-danger');
+            }
+        }, 1000);
+    }
+    
+    function stopReservationTimer() {
+        const timerDisplay = document.getElementById('reservation-timer');
+        timerDisplay.style.display = 'none';
+        
+        if (reservationInterval) {
+            clearInterval(reservationInterval);
+        }
+    }
+    
+    // Auto-refresh page every 30 seconds to check for expired reservations
+    setInterval(function() {
+        fetch(window.location.href, { method: 'HEAD' })
+            .then(() => window.location.reload())
+            .catch(() => console.log('Refresh failed'));
+    }, 30000);
+</script>
+
+{% endblock %}

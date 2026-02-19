@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+    .show-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        margin-bottom: 12px;
+    }
+    .show-card:hover {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    .theatre-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
+    .theatre-location {
+        font-size: 13px;
+        color: #666;
+        margin-top: 4px;
+    }
+    .show-timing {
+        font-size: 14px;
+        color: #555;
+        margin-top: 8px;
+    }
+    .show-price {
+        font-size: 18px;
+        font-weight: 700;
+        color: #333;
+    }
+    .book-btn {
+        background: #f84464;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+    .book-btn:hover {
+        background: #e63654;
+    }
+    .trailer-section {
+        background: #fff;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    .trailer-title {
+        font-weight: 700;
+        margin-bottom: 15px;
+        color: #333;
+    }
+    .trailer-embed {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+</style>
+
+<div class="container mt-4">
+
+    <!-- Movie Poster and Info -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <img src="{{ movie.image.url }}" class="img-fluid rounded" style="box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        </div>
+        <div class="col-md-8">
+            <h2 style="font-weight: 700;">{{ movie.name }}</h2>
+            <p class="text-muted">{{ movie.description }}</p>
+            <div class="d-flex gap-3 mb-3">
+                <span class="badge bg-light text-dark border"><strong>Language:</strong> {{ movie.language }}</span>
+                <span class="badge bg-light text-dark border"><strong>Genre:</strong> {{ movie.genre }}</span>
+            </div>
+            <p><strong>Cast:</strong> {{ movie.cast }}</p>
+        </div>
+    </div>
+
+    <!-- Trailer Section -->
+    {% if movie.trailer_embed_url %}
+    <div class="trailer-section">
+        <h5 class="trailer-title"><i class="fas fa-play-circle me-2"></i>Watch Trailer</h5>
+        <div class="trailer-embed">
+            <iframe width="100%" height="400" src="{{ movie.trailer_embed_url }}" 
+                    title="YouTube video player" frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen" 
+                    allowfullscreen 
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    loading="lazy"></iframe>
+        </div>
+    </div>
+    {% endif %}
+
+    <h4 class="mb-3" style="font-weight: 700;">Select Theatre & Time</h4>
+
+    {% for show in shows %}
+        <div class="card show-card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="theatre-name">{{ show.screen.theatre.name }}</div>
+                    <div class="theatre-location">📍 {{ show.screen.theatre.city|truncatechars:30 }}</div>
+                    <div class="show-timing">
+                        <span class="me-3">🗓️ {{ show.date|date:"d M" }}</span>
+                        <span>⏰ {{ show.time|time:"h:i A" }}</span>
+                    </div>
+                </div>
+
+                <div class="text-end">
+                    <div class="show-price">₹{{ show.price }}</div>
+                    <a href="{% url 'booking:select_seats' show.id %}"
+                       class="btn book-btn text-white mt-2">
+                        Book Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="alert alert-info">No shows available for this movie.</div>
+    {% endfor %}
+
+</div>
+
+{% endblock %}

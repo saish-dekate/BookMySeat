@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import register, login_view, profile, reset_password, home
+from .admin_views import admin_dashboard
 from django.contrib.auth import views as auth_views
 
 class CustomLogoutView(auth_views.LogoutView):
@@ -25,4 +26,5 @@ urlpatterns = [
     path('password-reset-complete/',
          auth_views.PasswordResetCompleteView.as_view(template_name='users/password_reset_complete.html'),
          name='password_reset_complete'),
+    path('dashboard/', admin_dashboard, name='admin_dashboard'),
 ]
