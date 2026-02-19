@@ -12,7 +12,7 @@ ALLOWED_HOSTS = [
     '.vercel.app',
     'localhost',
     '127.0.0.1',
-    'django-bookmyshow.vercel.app',
+    '.saishs-projects.vercel.app',
 ]
 
 INSTALLED_APPS = [
@@ -42,7 +42,7 @@ AUTH_USER_MODEL='auth.User'
 
 EMAIL_BACKEND=os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST=os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT=os.environ.get('EMAIL_PORT', '587')
+EMAIL_PORT=int(os.environ.get('EMAIL_PORT', '587'))
 EMAIL_USE_TLS=os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER=os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD=os.environ.get('EMAIL_HOST_PASSWORD', '')
@@ -71,16 +71,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bookmyseat.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+database_url = os.environ.get('DATABASE_URL', '')
 
-database_url = os.environ.get('DATABASE_URL')
 if database_url:
-    DATABASES['default'] = dj_database_url.parse(database_url)
+    DATABASES = {
+        'default': dj_database_url.parse(database_url)
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
