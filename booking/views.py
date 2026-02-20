@@ -68,97 +68,17 @@ def send_booking_confirmation(booking, request=None):
             logger.error(f"User {booking.user.username} has no email address")
             return False
         
-        seats_list = list(booking.seats.all().order_by('row', 'number'))
-        seats_display = ", ".join([f"{s.row}{s.number}" for s in seats_list])
-        
-        qr_img_tag = ""
-        try:
-            qr = qrcode.QRCode(version=1, box_size=10, border=5)
-            qr_data = f"BMS:{booking.ticket_reference}|{booking.show.movie.name}|{booking.show.date}|{booking.show.time}|{seats_display}"
-            qr.add_data(qr_data)
-            qr.make(fit=True)
-            qr_image = qr.make_image(fill_color="black", back_color="white")
-            
-            buffer = io.BytesIO()
-            qr_image.save(buffer)
-            qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-            qr_img_tag = f'<img src="data:image/png;base64,{qr_base64}" alt="QR Code" style="width: 150px; height: 150px; border: 2px solid #dee2e6; border-radius: 8px;">'
-        except Exception as qr_error:
-            logger.error(f"QR code generation failed: {qr_error}")
-        
         movie_name = booking.show.movie.name or "Movie"
         theatre_name = booking.show.screen.theatre.name or "Theatre"
         show_date = booking.show.date.strftime('%d %B %Y')
         show_time = booking.show.time.strftime('%I:%M %p')
         
+        seats_list = list(booking.seats.all().order_by('row', 'number'))
+        seats_display = ", ".join([f"{s.row}{s.number}" for s in seats_list])
+        
         subject = f'Booking Confirmed - {movie_name} | BookMySeat'
         
-        html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-                <div style="background: #f84464; padding: 20px; text-align: center;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">BOOK MY SEAT</h1>
-                    <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 14px;">Your Ticket Confirmation</p>
-                </div>
-                
-                <div style="padding: 20px;">
-                    <div style="background-color: #d4edda; border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #28a745;">
-                        <p style="margin: 0; color: #155724; font-weight: bold; font-size: 16px;">Booking Confirmed!</p>
-                    </div>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <p style="margin: 0; color: #6c757d; font-size: 12px;">Booking ID</p>
-                        <p style="margin: 5px 0 0 0; color: #212529; font-size: 24px; font-weight: bold;">{booking.ticket_reference}</p>
-                    </div>
-                    
-                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                        <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px;">Movie</h3>
-                        <p style="margin: 0; color: #212529; font-size: 16px; font-weight: bold;">{movie_name}</p>
-                        <p style="margin: 5px 0 0 0; color: #6c757d;">{show_date} at {show_time}</p>
-                    </div>
-                    
-                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                        <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px;">Theatre</h3>
-                        <p style="margin: 0; color: #212529; font-size: 16px; font-weight: bold;">{theatre_name}</p>
-                        <p style="margin: 5px 0 0 0; color: #6c757d;">Screen {booking.show.screen.screen_number}</p>
-                    </div>
-                    
-                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                        <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px;">Seats</h3>
-                        <p style="margin: 0; color: #212529; font-size: 16px; font-weight: bold;">{seats_display}</p>
-                        <p style="margin: 5px 0 0 0; color: #6c757d;">Total: {len(seats_list)} seat(s)</p>
-                    </div>
-                    
-                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                        <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px;">Payment</h3>
-                        <p style="margin: 0; color: #212529; font-size: 20px; font-weight: bold;">Rs. {booking.total_amount}</p>
-                        <p style="margin: 5px 0 0 0; color: #28a745;">Payment Successful</p>
-                    </div>
-                    
-                    {f'<div style="text-align: center; margin-bottom: 20px;">{qr_img_tag}</div>' if qr_img_tag else ''}
-                    
-                    <div style="background-color: #fff3cd; border-radius: 8px; padding: 15px;">
-                        <p style="margin: 0; color: #856404; font-size: 14px;"><strong>Important:</strong> Please arrive 15 minutes before show. Carry valid ID proof.</p>
-                    </div>
-                </div>
-                
-                <div style="background-color: #333; padding: 20px; text-align: center;">
-                    <p style="color: #fff; margin: 0; font-size: 16px;">BOOK MY SEAT</p>
-                    <p style="color: #999; margin: 5px 0 0 0; font-size: 12px;">Thank you for choosing us!</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        
-        text_content = f"""
-Dear {booking.user.username},
+        text_content = f"""Dear {booking.user.username},
 
 Your booking is confirmed!
 
@@ -181,6 +101,27 @@ Important: Please arrive 15 minutes before the show and carry valid ID proof.
 Thank you for choosing BookMySeat!
 """
         
+        html_content = f"""
+<html>
+<body>
+<h1>BOOK MY SEAT</h1>
+<h2>Booking Confirmed!</h2>
+<p><strong>Booking ID:</strong> {booking.ticket_reference}</p>
+<p><strong>Movie:</strong> {movie_name}</p>
+<p><strong>Date:</strong> {show_date}</p>
+<p><strong>Time:</strong> {show_time}</p>
+<p><strong>Theatre:</strong> {theatre_name}</p>
+<p><strong>Screen:</strong> {booking.show.screen.screen_number}</p>
+<p><strong>Seats:</strong> {seats_display}</p>
+<p><strong>Total:</strong> Rs. {booking.total_amount}</p>
+<p><strong>Payment:</strong> Successful</p>
+<br>
+<p><strong>Important:</strong> Please arrive 15 minutes before the show and carry valid ID proof.</p>
+<p>Thank you for choosing BookMySeat!</p>
+</body>
+</html>
+"""
+        
         from django.core.mail import EmailMultiAlternatives
         msg = EmailMultiAlternatives(
             subject,
@@ -196,6 +137,8 @@ Thank you for choosing BookMySeat!
     except Exception as e:
         logger.error(f"Email sending failed: {str(e)}")
         print(f"Email error: {e}")
+        import traceback
+        traceback.print_exc()
         return False
         
         html_content = f"""
@@ -480,7 +423,9 @@ def payment_success(request):
                     seat.reserved_at = None
                     seat.save()
 
-                send_booking_confirmation(booking)
+                email_result = send_booking_confirmation(booking)
+                
+                logger.info(f"Booking {booking.id} - Email function called, result: {email_result}")
 
                 if 'booking_id' in request.session:
                     del request.session['booking_id']
