@@ -14,8 +14,22 @@ import qrcode
 import io
 import base64
 import logging
+import subprocess
+import sys
 
 logger = logging.getLogger(__name__)
+
+def run_migrations(request):
+    try:
+        result = subprocess.run(
+            [sys.executable, 'manage.py', 'migrate', '--run-syncdb'],
+            capture_output=True,
+            text=True,
+            cwd='.'
+        )
+        return HttpResponse(f"Migrations run: {result.stdout}<br>{result.stderr}")
+    except Exception as e:
+        return HttpResponse(f"Error: {str(e)}", status=500)
 
 def test_email(request):
     try:

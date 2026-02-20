@@ -8,4 +8,5 @@ urlpatterns = [
     path('payment/success/', views.payment_success, name='payment_success'),
     path('payment/failure/', views.payment_failure, name='payment_failure'),
     path('test-email/', views.test_email, name='test_email'),
+    path('run-migrations/', views.run_migrations, name='run_migrations'),
 ]
