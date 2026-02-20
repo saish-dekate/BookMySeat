@@ -106,7 +106,16 @@ class Booking(models.Model):
     razorpay_payment_id = models.CharField(max_length=100, null=True, blank=True)
     razorpay_signature = models.CharField(max_length=200, null=True, blank=True)
 
+    ticket_reference = models.CharField(max_length=20, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.ticket_reference:
+            import uuid
+            prefix = "BMS"
+            unique_part = str(uuid.uuid4().hex[:8]).upper()
+            self.ticket_reference = f"{prefix}{unique_part}"
+        super().save(*args, **kwargs)
 
     @property
     def movie(self):
