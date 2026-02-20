@@ -390,3 +390,34 @@ def payment_failure(request):
 
     messages.error(request, "Payment failed. Please try again.")
     return redirect('movies:movie_list')
+
+
+@csrf_exempt
+def check_payment_status(request):
+    if request.method == 'POST':
+        import json
+        try:
+            data = json.loads(request.body)
+            order_id = data.get('order_id')
+            
+            if not order_id:
+                return JsonResponse({'status': 'error', 'message': 'No order ID provided'})
+            
+            booking = Booking.objects.filter(razorpay_order_id=order_id).first()
+            
+            if not booking:
+                return JsonResponse({'status': 'error', 'message': 'Booking not found'})
+            
+            if booking.is_paid:
+                return JsonResponse({
+                    'status': 'paid',
+                    'payment_id': booking.razorpay_payment_id,
+                    'booking_id': booking.id
+                })
+            else:
+                return JsonResponse({'status': 'pending'})
+                
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'})
