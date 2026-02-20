@@ -41,7 +41,12 @@ def send_booking_confirmation(booking, request=None):
     logger = logging.getLogger(__name__)
     
     try:
-        if not booking.ticket_reference:
+        try:
+            if not booking.ticket_reference:
+                booking.save()
+        except Exception as e:
+            logger.error(f"Error saving booking for ticket reference: {e}")
+            booking.ticket_reference = f"BMS{booking.id}"
             booking.save()
         
         if not booking.user.email:
@@ -51,15 +56,19 @@ def send_booking_confirmation(booking, request=None):
         seats_list = list(booking.seats.all().order_by('row', 'number'))
         seats_display = ", ".join([f"{s.row}{s.number}" for s in seats_list])
         
-        qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr_data = f"BMS:{booking.ticket_reference}|{booking.show.movie.name}|{booking.show.date}|{booking.show.time}|{seats_display}"
-        qr.add_data(qr_data)
-        qr.make(fit=True)
-        qr_image = qr.make_image(fill_color="black", back_color="white")
-        
-        buffer = io.BytesIO()
-        qr_image.save(buffer)
-        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+        qr_base64 = ""
+        try:
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr_data = f"BMS:{booking.ticket_reference}|{booking.show.movie.name}|{booking.show.date}|{booking.show.time}|{seats_display}"
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            qr_image = qr.make_image(fill_color="black", back_color="white")
+            
+            buffer = io.BytesIO()
+            qr_image.save(buffer)
+            qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+        except Exception as qr_error:
+            logger.error(f"QR code generation failed: {qr_error}")
         
         subject = f'Booking Confirmed - {booking.show.movie.name} | BookMySeat'
         
