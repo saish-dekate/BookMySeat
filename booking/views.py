@@ -70,6 +70,7 @@ def send_booking_confirmation(booking, request=None):
         
         movie_name = booking.show.movie.name or "Movie"
         theatre_name = booking.show.screen.theatre.name or "Theatre"
+        city = booking.show.screen.theatre.city or ""
         show_date = booking.show.date.strftime('%d %B %Y')
         show_time = booking.show.time.strftime('%I:%M %p')
         
@@ -102,22 +103,71 @@ Thank you for choosing BookMySeat!
 """
         
         html_content = f"""
+<!DOCTYPE html>
 <html>
-<body>
-<h1>BOOK MY SEAT</h1>
-<h2>Booking Confirmed!</h2>
-<p><strong>Booking ID:</strong> {booking.ticket_reference}</p>
-<p><strong>Movie:</strong> {movie_name}</p>
-<p><strong>Date:</strong> {show_date}</p>
-<p><strong>Time:</strong> {show_time}</p>
-<p><strong>Theatre:</strong> {theatre_name}</p>
-<p><strong>Screen:</strong> {booking.show.screen.screen_number}</p>
-<p><strong>Seats:</strong> {seats_display}</p>
-<p><strong>Total:</strong> Rs. {booking.total_amount}</p>
-<p><strong>Payment:</strong> Successful</p>
-<br>
-<p><strong>Important:</strong> Please arrive 15 minutes before the show and carry valid ID proof.</p>
-<p>Thank you for choosing BookMySeat!</p>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+        <div style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); padding: 25px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">BOOK MY SEAT</h1>
+            <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 14px;">Your Ticket Confirmation</p>
+        </div>
+        
+        <div style="padding: 25px;">
+            <div style="background-color: #d4edda; border-radius: 8px; padding: 20px; margin-bottom: 25px; border-left: 4px solid #28a745;">
+                <p style="margin: 0; color: #155724; font-weight: bold; font-size: 18px;">&#10003; Booking Confirmed</p>
+                <p style="margin: 5px 0 0 0; color: #155724; font-size: 14px;">Thank you for booking with us!</p>
+            </div>
+            
+            <div style="margin-bottom: 25px;">
+                <p style="margin: 0; color: #6c757d; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking ID</p>
+                <p style="margin: 5px 0 0 0; color: #212529; font-size: 28px; font-weight: bold; font-family: monospace;">{booking.ticket_reference}</p>
+            </div>
+            
+            <div style="background-color: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 16px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Movie</h3>
+                <p style="margin: 0; color: #212529; font-size: 20px; font-weight: bold;">{movie_name}</p>
+                <p style="margin: 8px 0 0 0; color: #6c757d; font-size: 14px;">&#128197; {show_date} &nbsp;|&nbsp; &#9200; {show_time}</p>
+            </div>
+            
+            <div style="background-color: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 16px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Theatre</h3>
+                <p style="margin: 0; color: #212529; font-size: 18px; font-weight: bold;">{theatre_name}</p>
+                <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 14px;">&#127916; Screen {booking.show.screen.screen_number}</p>
+                {f'<p style="margin: 5px 0 0 0; color: #6c757d; font-size: 14px;">&#128205; {city}</p>' if city else ''}
+            </div>
+            
+            <div style="background-color: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 16px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Seats</h3>
+                <p style="margin: 0; color: #212529; font-size: 24px; font-weight: bold; letter-spacing: 2px;">{seats_display}</p>
+                <p style="margin: 8px 0 0 0; color: #6c757d; font-size: 14px;">Total: {len(seats_list)} seat(s)</p>
+            </div>
+            
+            <div style="background-color: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 16px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Payment</h3>
+                <p style="margin: 0; color: #212529; font-size: 28px; font-weight: bold;">&#8377; {booking.total_amount}</p>
+                <p style="margin: 8px 0 0 0; color: #28a745; font-size: 14px; font-weight: bold;">&#10003; Payment Successful</p>
+            </div>
+            
+            <div style="background-color: #fff3cd; border-radius: 8px; padding: 15px; border-left: 4px solid #ffc107;">
+                <p style="margin: 0; color: #856404; font-size: 14px;"><strong>&#9888; Important:</strong></p>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #856404; font-size: 13px;">
+                    <li style="margin-bottom: 5px;">Please arrive at least 15 minutes before the show</li>
+                    <li style="margin-bottom: 5px;">Carry a valid ID proof along with this ticket</li>
+                    <li style="margin-bottom: 0;">This ticket is non-transferable</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div style="background-color: #212529; padding: 25px; text-align: center;">
+            <p style="color: #ffffff; margin: 0; font-size: 18px; font-weight: bold;">BOOK MY SEAT</p>
+            <p style="color: #adb5bd; margin: 8px 0 0 0; font-size: 12px;">Thank you for choosing BookMySeat!</p>
+            <p style="color: #adb5bd; margin: 5px 0 0 0; font-size: 12px;">Happy Watching &#127909;</p>
+        </div>
+    </div>
 </body>
 </html>
 """
