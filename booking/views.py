@@ -36,134 +36,144 @@ def get_razorpay_client():
     return razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
 
-def send_booking_confirmation(booking):
-    seats_list = list(booking.seats.all().order_by('row', 'number'))
-    seats_display = ", ".join([f"{s.row}{s.number}" for s in seats_list])
+def send_booking_confirmation(booking, request=None):
+    import logging
+    logger = logging.getLogger(__name__)
     
-    qr = qrcode.QRCode(version=1, box_size=10, border=5)
-    qr_data = f"BMS:{booking.ticket_reference}|{booking.show.movie.name}|{booking.show.date}|{booking.show.time}|{seats_display}"
-    qr.add_data(qr_data)
-    qr.make(fit=True)
-    qr_image = qr.make_image(fill_color="black", back_color="white")
-    
-    buffer = io.BytesIO()
-    qr_image.save(buffer)
-    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
-    
-    subject = f'Booking Confirmed - {booking.show.movie.name} | BookMySeat'
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    </head>
-    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
-            <div style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); padding: 20px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">BOOK MY SEAT</h1>
-                <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 14px;">Your Ticket Confirmation</p>
+    try:
+        if not booking.ticket_reference:
+            booking.save()
+        
+        if not booking.user.email:
+            logger.error(f"User {booking.user.username} has no email address")
+            return False
+        
+        seats_list = list(booking.seats.all().order_by('row', 'number'))
+        seats_display = ", ".join([f"{s.row}{s.number}" for s in seats_list])
+        
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
+        qr_data = f"BMS:{booking.ticket_reference}|{booking.show.movie.name}|{booking.show.date}|{booking.show.time}|{seats_display}"
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+        qr_image = qr.make_image(fill_color="black", back_color="white")
+        
+        buffer = io.BytesIO()
+        qr_image.save(buffer)
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+        
+        subject = f'Booking Confirmed - {booking.show.movie.name} | BookMySeat'
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+                <div style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); padding: 20px; text-align: center;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">BOOK MY SEAT</h1>
+                    <p style="color: #ffffff; margin: 5px 0 0 0; font-size: 14px;">Your Ticket Confirmation</p>
+                </div>
+                
+                <div style="padding: 20px;">
+                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #eb3349;">
+                        <p style="margin: 0; color: #28a745; font-weight: bold; font-size: 16px;">✓ Booking Confirmed</p>
+                        <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 14px;">Thank you for booking with us!</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <p style="margin: 0; color: #6c757d; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking ID</p>
+                        <p style="margin: 5px 0 0 0; color: #212529; font-size: 24px; font-weight: bold;">{booking.ticket_reference}</p>
+                    </div>
+                    
+                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Movie Details</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;">Movie</td>
+                                <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: bold;">{booking.show.movie.name}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Date</td>
+                                <td style="padding: 8px 0; color: #212529; font-size: 14px;">{booking.show.date.strftime('%A, %d %B %Y')}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Time</td>
+                                <td style="padding: 8px 0; color: #212529; font-size: 14px;">{booking.show.time.strftime('%I:%M %p')}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Theatre Details</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;">Theatre</td>
+                                <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: bold;">{booking.show.screen.theatre.name}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Screen</td>
+                                <td style="padding: 8px 0; color: #212529; font-size: 14px;">Screen {booking.show.screen.screen_number}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Location</td>
+                                <td style="padding: 8px 0; color: #212529; font-size: 14px;">{booking.show.screen.theatre.city}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Seat Information</h3>
+                        <p style="margin: 0 0 10px 0; color: #212529; font-size: 16px; font-weight: bold;">{seats_display}</p>
+                        <p style="margin: 0; color: #6c757d; font-size: 14px;">Total Seats: {len(seats_list)}</p>
+                    </div>
+                    
+                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                        <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Payment Details</h3>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;">Total Amount</td>
+                                <td style="padding: 8px 0; color: #212529; font-size: 20px; font-weight: bold;">₹{booking.total_amount}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Payment ID</td>
+                                <td style="padding: 8px 0; color: #212529; font-size: 14px;">{booking.razorpay_payment_id or 'N/A'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Payment Status</td>
+                                <td style="padding: 8px 0; color: #28a745; font-size: 14px; font-weight: bold;">SUCCESS</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <p style="margin: 0 0 10px 0; color: #6c757d; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Scan at the theatre</p>
+                        <img src="data:image/png;base64,{qr_base64}" alt="QR Code" style="width: 150px; height: 150px; border: 2px solid #dee2e6; border-radius: 8px;">
+                    </div>
+                    
+                    <div style="background-color: #fff3cd; border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+                        <h4 style="margin: 0 0 10px 0; color: #856404; font-size: 14px; font-weight: bold;">Important Instructions</h4>
+                        <ul style="margin: 0; padding-left: 20px; color: #856404; font-size: 13px;">
+                            <li style="margin-bottom: 5px;">Please arrive at least 15 minutes before the show</li>
+                            <li style="margin-bottom: 5px;">Carry a valid ID proof along with this ticket</li>
+                            <li style="margin-bottom: 5px;">This ticket is non-transferable</li>
+                            <li style="margin-bottom: 0;">Outside food and beverages are not allowed</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div style="background-color: #212529; padding: 20px; text-align: center;">
+                    <p style="color: #ffffff; margin: 0 0 10px 0; font-size: 16px; font-weight: bold;">BOOK MY SEAT</p>
+                    <p style="color: #adb5bd; margin: 0; font-size: 12px;">Thank you for choosing BookMySeat!</p>
+                </div>
             </div>
-            
-            <div style="padding: 20px;">
-                <div style="background-color: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #eb3349;">
-                    <p style="margin: 0; color: #28a745; font-weight: bold; font-size: 16px;">✓ Booking Confirmed</p>
-                    <p style="margin: 5px 0 0 0; color: #6c757d; font-size: 14px;">Thank you for booking with us!</p>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <p style="margin: 0; color: #6c757d; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Booking ID</p>
-                    <p style="margin: 5px 0 0 0; color: #212529; font-size: 24px; font-weight: bold;">{booking.ticket_reference}</p>
-                </div>
-                
-                <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Movie Details</h3>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;">Movie</td>
-                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: bold;">{booking.show.movie.name}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Date</td>
-                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">{booking.show.date.strftime('%A, %d %B %Y')}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Time</td>
-                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">{booking.show.time.strftime('%I:%M %p')}</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Theatre Details</h3>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;">Theatre</td>
-                            <td style="padding: 8px 0; color: #212529; font-size: 14px; font-weight: bold;">{booking.show.screen.theatre.name}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Screen</td>
-                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">Screen {booking.show.screen.screen_number}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Location</td>
-                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">{booking.show.screen.theatre.city}</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Seat Information</h3>
-                    <p style="margin: 0 0 10px 0; color: #212529; font-size: 16px; font-weight: bold;">{seats_display}</p>
-                    <p style="margin: 0; color: #6c757d; font-size: 14px;">Total Seats: {len(seats_list)}</p>
-                </div>
-                
-                <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
-                    <h3 style="margin: 0 0 15px 0; color: #212529; font-size: 18px; border-bottom: 2px solid #eb3349; padding-bottom: 10px;">Payment Details</h3>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px; width: 40%;">Total Amount</td>
-                            <td style="padding: 8px 0; color: #212529; font-size: 20px; font-weight: bold;">₹{booking.total_amount}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Payment ID</td>
-                            <td style="padding: 8px 0; color: #212529; font-size: 14px;">{booking.razorpay_payment_id or 'N/A'}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px 0; color: #6c757d; font-size: 14px;">Payment Status</td>
-                            <td style="padding: 8px 0; color: #28a745; font-size: 14px; font-weight: bold;">SUCCESS</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <p style="margin: 0 0 10px 0; color: #6c757d; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Scan at the theatre</p>
-                    <img src="data:image/png;base64,{qr_base64}" alt="QR Code" style="width: 150px; height: 150px; border: 2px solid #dee2e6; border-radius: 8px;">
-                </div>
-                
-                <div style="background-color: #fff3cd; border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
-                    <h4 style="margin: 0 0 10px 0; color: #856404; font-size: 14px; font-weight: bold;">Important Instructions</h4>
-                    <ul style="margin: 0; padding-left: 20px; color: #856404; font-size: 13px;">
-                        <li style="margin-bottom: 5px;">Please arrive at least 15 minutes before the show</li>
-                        <li style="margin-bottom: 5px;">Carry a valid ID proof along with this ticket</li>
-                        <li style="margin-bottom: 5px;">This ticket is non-transferable</li>
-                        <li style="margin-bottom: 0;">Outside food and beverages are not allowed</li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div style="background-color: #212529; padding: 20px; text-align: center;">
-                <p style="color: #ffffff; margin: 0 0 10px 0; font-size: 16px; font-weight: bold;">BOOK MY SEAT</p>
-                <p style="color: #adb5bd; margin: 0; font-size: 12px;">Thank you for choosing BookMySeat!</p>
-                <p style="color: #adb5bd; margin: 5px 0 0 0; font-size: 11px;">Happy Watching! 🎬</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    text_content = f"""
+        </body>
+        </html>
+        """
+        
+        text_content = f"""
 Dear {booking.user.username},
 
 Your booking has been confirmed!
@@ -187,19 +197,13 @@ IMPORTANT
 =========
 - Please arrive at least 15 minutes before the show
 - Carry a valid ID proof along with this confirmation
-- Seats will be allocated on a first-come, first-served basis
 
 Thank you for choosing BookMySeat!
 
-Happy Watching!
-
 Best Regards,
 BookMySeat Team
-    """
-    import logging
-    logger = logging.getLogger(__name__)
-    
-    try:
+        """
+        
         msg = EmailMultiAlternatives(
             subject,
             text_content,
@@ -211,7 +215,7 @@ BookMySeat Team
         logger.info(f"Booking confirmation email sent to {booking.user.email} for booking {booking.ticket_reference}")
         return True
     except Exception as e:
-        logger.error(f"Email sending failed for booking {booking.ticket_reference}: {str(e)}")
+        logger.error(f"Email sending failed for booking {getattr(booking, 'ticket_reference', 'N/A')}: {str(e)}")
         print(f"Email sending failed: {e}")
         return False
 
